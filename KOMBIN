@@ -1566,16 +1566,25 @@ def bundle_olustur():
     def bundle_hesapla():
         # İkili paketler
         ikili_paketler = []
-        # Ürün fiyat sözlüğünü önceden hesapla
+        # Ürün meta bilgilerini tek seferde hesapla
         urun_fiyat_ort = {}
-        if 'Fiyat' in satis_verisi.columns:
-            urun_fiyat_ort = satis_verisi.groupby('Urun_Adi')['Fiyat'].mean().to_dict()
         urun_kategori = {}
-        if 'Kategori' in satis_verisi.columns:
-            urun_kategori = satis_verisi.groupby('Urun_Adi')['Kategori'].first().to_dict()
         urun_renk = {}
+        agg_dict = {}
+        if 'Fiyat' in satis_verisi.columns:
+            agg_dict['Fiyat'] = 'mean'
+        if 'Kategori' in satis_verisi.columns:
+            agg_dict['Kategori'] = 'first'
         if 'Renk' in satis_verisi.columns:
-            urun_renk = satis_verisi.groupby('Urun_Adi')['Renk'].first().to_dict()
+            agg_dict['Renk'] = 'first'
+        if agg_dict:
+            urun_agg = satis_verisi.groupby('Urun_Adi').agg(agg_dict)
+            if 'Fiyat' in urun_agg.columns:
+                urun_fiyat_ort = urun_agg['Fiyat'].to_dict()
+            if 'Kategori' in urun_agg.columns:
+                urun_kategori = urun_agg['Kategori'].to_dict()
+            if 'Renk' in urun_agg.columns:
+                urun_renk = urun_agg['Renk'].to_dict()
 
         for k in kombin_sonuclari[:5]:
             f1 = urun_fiyat_ort.get(k['urun1'], 0)
@@ -2052,16 +2061,16 @@ def lookbook_olustur():
         # En iyi 6 kombin
         top_kombinler = kombin_sonuclari[:6]
 
-        # Ürün meta bilgilerini dahil et
+        # Ürün meta bilgilerini tek seferde hesapla
         urun_detay = {}
-        if 'Kategori' in satis_verisi.columns:
-            urun_detay['kategori'] = satis_verisi.groupby('Urun_Adi')['Kategori'].first().to_dict()
-        if 'Renk' in satis_verisi.columns:
-            urun_detay['renk'] = satis_verisi.groupby('Urun_Adi')['Renk'].first().to_dict()
-        if 'Sezon' in satis_verisi.columns:
-            urun_detay['sezon'] = satis_verisi.groupby('Urun_Adi')['Sezon'].first().to_dict()
-        if 'Cinsiyet' in satis_verisi.columns:
-            urun_detay['cinsiyet'] = satis_verisi.groupby('Urun_Adi')['Cinsiyet'].first().to_dict()
+        agg_dict_lb = {}
+        for col in ['Kategori', 'Renk', 'Sezon', 'Cinsiyet']:
+            if col in satis_verisi.columns:
+                agg_dict_lb[col] = 'first'
+        if agg_dict_lb:
+            urun_agg_lb = satis_verisi.groupby('Urun_Adi').agg(agg_dict_lb)
+            for col in agg_dict_lb:
+                urun_detay[col.lower()] = urun_agg_lb[col].to_dict()
 
         kombin_listesi = ""
         for i, k in enumerate(top_kombinler):
