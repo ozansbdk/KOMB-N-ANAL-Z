@@ -266,7 +266,7 @@ def veri_ozeti_olustur():
     # Aylık dağılım
     if 'Tarih' in satis_verisi.columns:
         try:
-            tarih_col = pd.to_datetime(satis_verisi['Tarih'], errors='coerce')
+            tarih_col = pd.to_datetime(satis_verisi['Tarih'], dayfirst=True, errors='coerce')
             aylik = tarih_col.dt.to_period('M').value_counts().sort_index()
             if not aylik.empty:
                 ozet += "\n\n📆 AYLIK SİPARİŞ DAĞILIMI:\n" + "\n".join(
@@ -1748,7 +1748,7 @@ def sezon_tahmin_calistir():
                 [f"  - {k}: {v} satış" for k, v in sezon_dag.items()])
         if 'Tarih' in satis_verisi.columns:
             try:
-                tarih_col = pd.to_datetime(satis_verisi['Tarih'], errors='coerce')
+                tarih_col = pd.to_datetime(satis_verisi['Tarih'], dayfirst=True, errors='coerce')
                 aylik = tarih_col.dt.month.value_counts().sort_index()
                 ay_isimleri = {1:"Ocak",2:"Şubat",3:"Mart",4:"Nisan",5:"Mayıs",6:"Haziran",
                               7:"Temmuz",8:"Ağustos",9:"Eylül",10:"Ekim",11:"Kasım",12:"Aralık"}
