@@ -1103,6 +1103,50 @@ def csv_disa_aktar():
         except Exception as e:
             messagebox.showerror("Hata", f"Kayıt hatası: {e}")
 
+def ornek_sablon_indir():
+    """Kullanıcıya doğru başlıklara sahip örnek bir CSV/Excel şablon dosyası indirir."""
+    dosya_yolu = filedialog.asksaveasfilename(
+        defaultextension=".csv",
+        filetypes=[("CSV Dosyası", "*.csv"), ("Excel Dosyası", "*.xlsx")],
+        title="Örnek Şablon Kaydet",
+        initialfile="ornek_veri_sablonu")
+    if not dosya_yolu:
+        return
+
+    # Örnek veriler — başlıkları ve formatı göstermek için
+    ornek_satirlar = [
+        {"Siparis_No": 1001, "Urun_Adi": "Siyah Kot Pantolon", "Fiyat": 349},
+        {"Siparis_No": 1001, "Urun_Adi": "Beyaz Basic Tişört", "Fiyat": 129},
+        {"Siparis_No": 1001, "Urun_Adi": "Deri Kemer", "Fiyat": 199},
+        {"Siparis_No": 1002, "Urun_Adi": "Spor Ayakkabı", "Fiyat": 599},
+        {"Siparis_No": 1002, "Urun_Adi": "Desenli Çorap", "Fiyat": 49},
+        {"Siparis_No": 1003, "Urun_Adi": "Oversize Gömlek", "Fiyat": 279},
+        {"Siparis_No": 1003, "Urun_Adi": "Keten Şort", "Fiyat": 199},
+        {"Siparis_No": 1003, "Urun_Adi": "Güneş Gözlüğü", "Fiyat": 159},
+        {"Siparis_No": 1004, "Urun_Adi": "Kapüşonlu Sweatshirt", "Fiyat": 399},
+        {"Siparis_No": 1004, "Urun_Adi": "Siyah Kot Pantolon", "Fiyat": 349},
+    ]
+
+    df = pd.DataFrame(ornek_satirlar)
+
+    try:
+        if dosya_yolu.endswith('.xlsx'):
+            df.to_excel(dosya_yolu, index=False)
+        else:
+            df.to_csv(dosya_yolu, index=False, encoding='utf-8-sig', sep=';')
+
+        messagebox.showinfo(
+            "Başarılı",
+            f"Örnek şablon kaydedildi:\n{dosya_yolu}\n\n"
+            "📌 Kurallar:\n"
+            "• 'Siparis_No' ve 'Urun_Adi' sütunları zorunludur.\n"
+            "• 'Fiyat' sütunu opsiyoneldir ama önerilir.\n"
+            "• Aynı sipariş numarası altındaki ürünler aynı sepetin ürünleridir.\n"
+            "• Başlık satırını değiştirmeyin, sadece altına verilerinizi ekleyin.\n"
+            "• Örnek satırları silip kendi verilerinizi yazabilirsiniz.")
+    except Exception as e:
+        messagebox.showerror("Hata", f"Şablon kaydedilemedi: {e}")
+
 def pdf_rapor_olustur():
     """PDF rapor oluştur (C4)"""
     if not kombin_sonuclari or not MATPLOTLIB_AVAILABLE:
@@ -1415,6 +1459,10 @@ tema_btn.pack(fill="x", padx=15, pady=4)
 # Alt sidebar butonları
 bottom_sidebar = ctk.CTkFrame(sidebar, fg_color="transparent")
 bottom_sidebar.pack(side="bottom", fill="x", pady=15)
+ctk.CTkButton(bottom_sidebar, text="📋 Örnek Şablon İndir",
+              font=("Segoe UI", 12, "bold"),
+              fg_color="#2980b9", hover_color="#2471a3",
+              command=ornek_sablon_indir).pack(fill="x", padx=15, pady=4)
 ctk.CTkButton(bottom_sidebar, text="📁 Excel/CSV Yükle",
               font=("Segoe UI", 12, "bold"),
               fg_color="#27ae60", hover_color="#219a52",
