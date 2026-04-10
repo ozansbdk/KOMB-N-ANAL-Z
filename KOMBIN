@@ -479,8 +479,13 @@ def kendi_verimi_yukle():
 
     try:
         if dosya_yolu.endswith('.csv'):
-            # Ayırıcıyı otomatik algıla (şablon ';' kullanıyor)
-            df = pd.read_csv(dosya_yolu, sep=None, engine='python', encoding='utf-8-sig')
+            # Önce ';' ayırıcı ile dene (şablonun varsayılan formatı), sonra otomatik algıla
+            try:
+                df = pd.read_csv(dosya_yolu, sep=';', encoding='utf-8-sig')
+                if len(df.columns) <= 1:
+                    raise ValueError("Tek sütun algılandı, farklı ayırıcı deneniyor")
+            except (ValueError, pd.errors.ParserError):
+                df = pd.read_csv(dosya_yolu, sep=None, engine='python', encoding='utf-8-sig')
         else:
             df = pd.read_excel(dosya_yolu)
 
