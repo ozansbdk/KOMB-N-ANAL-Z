@@ -53,11 +53,14 @@ TEMALAR = {
 aktif_tema = "dark"
 
 def tema_renk(anahtar):
-    return TEMALAR[aktif_tema][anahtar]
+    return TEMALAR[aktif_tema].get(anahtar, "#ffffff")
 
 # --- YAPI VE TEMA AYARLARI ---
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
+
+# Grafik etiketlerinde maksimum karakter sayısı
+MAX_LABEL_LENGTH = 12
 
 # Global Veri Depoları
 satis_verisi = pd.DataFrame()
@@ -69,6 +72,7 @@ urun_sayac_global = Counter()
 sohbet_gecmisi = []
 
 # --- SQLITE VERİTABANI DESTEĞİ (C5) ---
+# __file__ may not be defined in interactive/embedded Python contexts
 try:
     _script_dir = os.path.dirname(os.path.abspath(__file__))
 except NameError:
@@ -334,7 +338,7 @@ def animasyonlu_sayac(label, hedef, adim=0, toplam_adim=20,
         return
 
     oran = adim / toplam_adim
-    # Ease-out cubic
+    # Ease-out cubic: decelerates as it approaches the target value
     oran = 1 - (1 - oran) ** 3
     mevcut = hedef * oran
 
@@ -723,7 +727,7 @@ def grafik_ciz_heatmap():
 
     im = ax.imshow(matris, cmap='YlOrRd', aspect='auto')
 
-    kisa_isimler = [u[:12] + "…" if len(u) > 14 else u for u in urunler]
+    kisa_isimler = [u[:MAX_LABEL_LENGTH] + "…" if len(u) > MAX_LABEL_LENGTH else u for u in urunler]
     ax.set_xticks(np.arange(n))
     ax.set_yticks(np.arange(n))
     ax.set_xticklabels(kisa_isimler, rotation=45, ha="right",
@@ -798,7 +802,7 @@ def grafik_ciz_network():
         boyut = 300 + (urun_agirlik[urun] / max_agirlik) * 700
         ax.scatter(x, y, s=boyut, color=node_renkleri[idx],
                    edgecolors='white', linewidth=2, zorder=2)
-        kisa_isim = urun[:10] + "…" if len(urun) > 12 else urun
+        kisa_isim = urun[:MAX_LABEL_LENGTH] + "…" if len(urun) > MAX_LABEL_LENGTH else urun
         ax.text(x, y - 0.5, kisa_isim, ha='center', va='top',
                 fontsize=8, color=tema_renk("yazi"), fontweight='bold')
 
@@ -825,7 +829,7 @@ def grafik_ciz_donut():
 
     # Sol: En çok satan ürünler donut
     en_populer = list(urun_sayac_global.most_common(6))
-    isimler = [u[0][:12] for u in en_populer]
+    isimler = [u[0][:MAX_LABEL_LENGTH] + "…" if len(u[0]) > MAX_LABEL_LENGTH else u[0] for u in en_populer]
     degerler = [u[1] for u in en_populer]
     renkler_d = mcm.Set3(np.linspace(0, 1, len(isimler)))
 
@@ -1035,14 +1039,13 @@ def sohbet_son_mesaji_guncelle(yeni_mesaj):
     chat_display.configure(state="normal")
     content = chat_display.get("1.0", "end-1c")
     lines = content.split('\n')
-    # Sondaki boş satırları temizle
+    # Sondaki boş satırları ve "düşünüyor" mesajını kaldır
     while lines and lines[-1].strip() == '':
         lines.pop()
-    # "düşünüyor" mesajını kaldır
     if lines and "düşünüyor" in lines[-1]:
         lines.pop()
-    while lines and lines[-1].strip() == '':
-        lines.pop()
+        while lines and lines[-1].strip() == '':
+            lines.pop()
 
     new_content = '\n'.join(lines) + '\n\n' + yeni_mesaj + '\n\n'
     chat_display.delete("1.0", "end")
@@ -1177,7 +1180,7 @@ def pdf_rapor_olustur():
 
             fig3 = Figure(figsize=(11, 8.5), facecolor='white')
             ax3 = fig3.add_subplot(111)
-            kisa_isimler = [u[:12] for u in urunler]
+            kisa_isimler = [u[:MAX_LABEL_LENGTH] + "…" if len(u) > MAX_LABEL_LENGTH else u for u in urunler]
             im = ax3.imshow(matris, cmap='YlOrRd', aspect='auto')
             ax3.set_xticks(np.arange(n))
             ax3.set_yticks(np.arange(n))
