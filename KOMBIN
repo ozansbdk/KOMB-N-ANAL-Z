@@ -991,7 +991,54 @@ Bu birliktelik verilerine bakarak:
 2. Depo/raf yerleşimi nasıl optimize edilmeli?
 3. Minimum stok seviyeleri nasıl belirlenmeli?
 4. Tedarik döngüsü nasıl planlanmalı?
-Pratik ve uygulanabilir önerilerle madde madde yaz."""
+Pratik ve uygulanabilir önerilerle madde madde yaz.""",
+
+    "👗 Kombin Öneri Motoru": """Sen uzman bir moda stilisti ve giyim danışmanısın. DeFacto gibi bir giyim perakende firmasının e-ticaret sitesi için çalışıyorsun.
+Bu sepet analizi verilerine bakarak:
+1. Her ürün için "Bununla ne giyilir?" önerisi oluştur. Renk, stil ve sezon uyumuna dikkat et.
+2. En popüler 5 ürün kombinasyonu için stil uyumu skoru ver (1-10 arası).
+3. Müşteriye gösterilecek "Bu ürünle kombin yap" pop-up mesajları yaz (kısa, çekici, satış odaklı).
+4. Capsule wardrobe (temel gardırop) önerisi oluştur: minimum kaç parçayla maksimum kombin.
+5. Sezona göre (İlkbahar/Yaz vs Sonbahar/Kış) farklı kombin önerileri sun.
+Profesyonel moda diliyle, madde madde yaz. Her öneri için neden o ürünlerin uyumlu olduğunu açıkla.""",
+
+    "🔄 İade Analizi": """Sen uzman bir e-ticaret iade ve müşteri memnuniyeti analistisin.
+Bu birliktelik ve satış verilerine bakarak:
+1. Hangi ürün çiftleri birlikte alınıp birlikte iade edilme riski taşıyor? Neden?
+2. Beden uyumsuzluğu, renk beklentisi farklılığı, kalite algısı gibi olası iade nedenlerini analiz et.
+3. İade oranını düşürmek için her ürün kategorisi için somut öneriler sun.
+4. "Birlikte alınan ama iade edilen" ürünler için alternatif eşleşme önerileri ver.
+5. İade azaltma stratejisi olarak ürün açıklamalarına/görsellerine ne eklenmeli?
+Somut ve uygulanabilir önerilerle madde madde yaz. Tahmini iade oranı düşüş yüzdeleri ver.""",
+
+    "📍 Bölgesel Analiz": """Sen uzman bir perakende lokasyon analisti ve bölgesel pazarlama danışmanısın.
+Türkiye'nin farklı bölgelerinde faaliyet gösteren bir giyim perakende zinciri (DeFacto gibi 500+ mağaza) için bu verileri analiz et:
+1. Bölgesel giyim tercihi farklılıklarını analiz et (İstanbul, Ankara, İzmir, Antalya, Trabzon, Diyarbakır vb.).
+2. İklim ve kültürel farklılıklara göre hangi kombinler hangi şehirlerde daha popüler olur?
+3. Her bölge için vitrin/manken düzenleme önerisi ver.
+4. Mağaza raf yerleşimi bölgeye göre nasıl optimize edilmeli?
+5. Bölgesel kampanya stratejileri öner (yerel festivaller, iklim döngüleri vb.).
+Pratik ve uygulanabilir önerilerle madde madde yaz.""",
+
+    "👤 CLV Tahmini": """Sen uzman bir müşteri analitiği ve CRM stratejisti sin.
+Bu sepet analizi verilerine bakarak müşteri yaşam boyu değeri (CLV) tahmini yap:
+1. Müşteri segmentlerini CLV bazında sırala (Yüksek/Orta/Düşük Değerli).
+2. Her segment için tahmini yıllık harcama ve yaşam boyu değer hesapla.
+3. Yüksek CLV müşterilere özel kombin önerileri ve VIP kampanya stratejileri sun.
+4. Churn (kayıp) riski olan müşteri profilini tanımla ve geri kazanım stratejileri öner.
+5. Sadakat programı (DefaClub benzeri) için puanlama ve ödüllendirme önerileri ver.
+6. RFM (Recency, Frequency, Monetary) bazlı segmentasyon ve her segment için aksiyon planı.
+Somut rakamlar ve stratejilerle madde madde yaz.""",
+
+    "📋 Rakip Karşılaştırma": """Sen uzman bir rekabet analisti ve perakende strateji danışmanısın.
+Türk giyim perakende sektörünü (DeFacto, LC Waikiki, Koton, Mavi, Colins vb.) iyi biliyorsun.
+Bu satış ve kombinasyon verilerine bakarak:
+1. Sektör ortalamalarıyla karşılaştır: Sepet büyüklüğü, çapraz satış oranı, kombin çeşitliliği.
+2. Rakiplerin uyguladığı bundle/paket stratejilerini analiz et ve bizim verilerimize uyarla.
+3. Eksik olduğumuz alanları tespit et: "Sepet ortalamanız sektörün X% altında/üstünde" gibi.
+4. Rekabet avantajı sağlayacak benzersiz kombin/kampanya fikirleri öner.
+5. Dijital dönüşüm ve AI kullanımında sektör benchmark'ı ile karşılaştır.
+Stratejik ve aksiyon odaklı, madde madde yaz."""
 }
 
 # --- AI SOHBET ARAYÜZÜ (B2, B3) ---
@@ -1246,6 +1293,561 @@ def pdf_rapor_olustur():
     except Exception as e:
         messagebox.showerror("Hata", f"PDF oluşturma hatası: {e}")
 
+# --- AKILLI ARAÇLAR: DİNAMİK BUNDLE OLUŞTURUCU (Özellik #3) ---
+def bundle_olustur():
+    """En çok birlikte satılan kombinlerden otomatik paket önerileri oluşturur."""
+    if not kombin_sonuclari:
+        messagebox.showwarning("Uyarı", "Önce verilerin yüklenmesi gerekiyor.")
+        return
+
+    for w in bundle_icerik_frame.winfo_children():
+        w.destroy()
+
+    # Header
+    ctk.CTkLabel(bundle_icerik_frame, text="⏳ Bundle paketleri oluşturuluyor...",
+                 font=("Segoe UI", 14), text_color="#f39c12").pack(pady=10)
+
+    def bundle_hesapla():
+        # İkili paketler
+        ikili_paketler = []
+        for k in kombin_sonuclari[:5]:
+            toplam_fiyat = 0
+            if 'Fiyat' in satis_verisi.columns:
+                f1 = satis_verisi[satis_verisi['Urun_Adi'] == k['urun1']]['Fiyat'].mean()
+                f2 = satis_verisi[satis_verisi['Urun_Adi'] == k['urun2']]['Fiyat'].mean()
+                toplam_fiyat = f1 + f2
+            ikili_paketler.append({
+                "urunler": [k['urun1'], k['urun2']],
+                "frekans": k['frekans'],
+                "destek": k['destek_yuzde'],
+                "toplam_fiyat": toplam_fiyat
+            })
+
+        # Üçlü paketler
+        uclu_paketler = []
+        for k in uclu_kombin_sonuclari[:3]:
+            toplam_fiyat = 0
+            if 'Fiyat' in satis_verisi.columns:
+                for u in [k['urun1'], k['urun2'], k['urun3']]:
+                    toplam_fiyat += satis_verisi[satis_verisi['Urun_Adi'] == u]['Fiyat'].mean()
+            uclu_paketler.append({
+                "urunler": [k['urun1'], k['urun2'], k['urun3']],
+                "frekans": k['frekans'],
+                "destek": k['destek_yuzde'],
+                "toplam_fiyat": toplam_fiyat
+            })
+
+        # AI ile paket isimleri ve pazarlama metni oluştur
+        paket_listesi = ""
+        for i, p in enumerate(ikili_paketler):
+            paket_listesi += f"İkili Paket {i+1}: {' + '.join(p['urunler'])} (Frekans: {p['frekans']}, Fiyat: {p['toplam_fiyat']:.0f} TL)\n"
+        for i, p in enumerate(uclu_paketler):
+            paket_listesi += f"Üçlü Paket {i+1}: {' + '.join(p['urunler'])} (Frekans: {p['frekans']}, Fiyat: {p['toplam_fiyat']:.0f} TL)\n"
+
+        prompt = f"""Sen uzman bir e-ticaret ürün yöneticisi ve pazarlama kreatifisin.
+Aşağıdaki ürün paketleri için:
+{paket_listesi}
+
+Her paket için:
+1. Yaratıcı ve çekici bir paket ismi (Türkçe, kısa)
+2. Önerilen indirim oranı (% olarak) ve gerekçesi
+3. E-ticaret sitesi için 1 cümlelik pazarlama metni
+4. Hedef müşteri profili
+
+Ayrıca genel strateji olarak:
+- "3 Al 2 Öde" vs "Paket İndirimi" hangisi daha etkili olur?
+- Haftanın kombini konsepti nasıl uygulanmalı?
+Format: Her paket için ayrı ayrı, madde madde yaz."""
+
+        ai_sonuc = gemini_istek_gonder(prompt)
+
+        def goster():
+            for w in bundle_icerik_frame.winfo_children():
+                w.destroy()
+
+            # Paket kartları
+            ctk.CTkLabel(bundle_icerik_frame, text="🏷️ Otomatik Oluşturulan Bundle Paketleri",
+                         font=("Segoe UI", 18, "bold"),
+                         text_color=tema_renk("yazi")).pack(anchor="w", padx=10, pady=(10, 5))
+
+            paket_grid = ctk.CTkFrame(bundle_icerik_frame, fg_color="transparent")
+            paket_grid.pack(fill="x", padx=5, pady=5)
+            for i in range(3):
+                paket_grid.grid_columnconfigure(i, weight=1)
+
+            renkler_b = ["#e74c3c", "#3498db", "#2ecc71", "#f39c12", "#9b59b6"]
+            tum_paketler = ikili_paketler + uclu_paketler
+
+            for idx, paket in enumerate(tum_paketler[:6]):
+                kart = ctk.CTkFrame(paket_grid, fg_color=tema_renk("kart"),
+                                    corner_radius=12, border_width=2,
+                                    border_color=renkler_b[idx % 5])
+                kart.grid(row=idx // 3, column=idx % 3, padx=8, pady=8, sticky="nsew")
+                kart_hover_ekle(kart, tema_renk("border"), renkler_b[idx % 5])
+
+                tip = "İkili" if len(paket["urunler"]) == 2 else "Üçlü"
+                ctk.CTkLabel(kart, text=f"📦 {tip} Paket #{idx+1}",
+                             font=("Segoe UI", 13, "bold"),
+                             text_color=renkler_b[idx % 5]).pack(padx=10, pady=(10, 2))
+
+                for urun in paket["urunler"]:
+                    ctk.CTkLabel(kart, text=f"  • {urun}",
+                                 font=("Segoe UI", 11),
+                                 text_color=tema_renk("yazi")).pack(anchor="w", padx=15)
+
+                bilgi_f = ctk.CTkFrame(kart, fg_color="transparent")
+                bilgi_f.pack(fill="x", padx=10, pady=(5, 2))
+                ctk.CTkLabel(bilgi_f, text=f"🔥 {paket['frekans']}x satış",
+                             font=("Segoe UI", 10),
+                             text_color=tema_renk("yazi2")).pack(side="left")
+                if paket["toplam_fiyat"] > 0:
+                    ctk.CTkLabel(bilgi_f, text=f"💰 {paket['toplam_fiyat']:.0f} TL",
+                                 font=("Segoe UI", 10, "bold"),
+                                 text_color="#2ecc71").pack(side="right")
+
+                ctk.CTkLabel(kart, text=f"Destek: %{paket['destek']:.1f}",
+                             font=("Segoe UI", 10),
+                             text_color=tema_renk("yazi3")).pack(pady=(0, 10))
+
+            # AI önerisi
+            ai_kart = ctk.CTkFrame(bundle_icerik_frame, fg_color=tema_renk("kart"),
+                                   corner_radius=12, border_width=2,
+                                   border_color="#f39c12")
+            ai_kart.pack(fill="x", padx=10, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text="🤖 AI Paket Stratejisi",
+                         font=("Segoe UI", 16, "bold"),
+                         text_color="#f39c12").pack(anchor="w", padx=15, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text=ai_sonuc,
+                         font=("Segoe UI", 12),
+                         text_color=tema_renk("yazi2"),
+                         wraplength=800, justify="left").pack(fill="x", padx=15, pady=(5, 15))
+
+        root.after(0, goster)
+
+    threading.Thread(target=bundle_hesapla, daemon=True).start()
+
+
+# --- AKILLI ARAÇLAR: SEZON & HAVA DURUMU TAHMİNİ (Özellik #2) ---
+def sezon_tahmin_calistir():
+    """Sezon ve ay bazlı talep tahmini yapar."""
+    if not kombin_sonuclari:
+        messagebox.showwarning("Uyarı", "Önce verilerin yüklenmesi gerekiyor.")
+        return
+
+    for w in sezon_icerik_frame.winfo_children():
+        w.destroy()
+
+    ctk.CTkLabel(sezon_icerik_frame, text="⏳ Sezon analizi yapılıyor...",
+                 font=("Segoe UI", 14), text_color="#f39c12").pack(pady=10)
+
+    def tahmin_yap():
+        ozet = veri_ozeti_olustur()
+        # Ürün kategorileri çıkar
+        urun_listesi = "\n".join([f"- {u}" for u in benzersiz_urunler])
+
+        prompt = f"""Sen uzman bir moda perakende trendi analisti ve koleksiyon planlama danışmanısın.
+
+{ozet}
+
+Mevcut ürün listesi:
+{urun_listesi}
+
+Lütfen aşağıdaki analizleri yap:
+
+📅 SEZONLUK ANALİZ:
+1. Bu ürünleri mevsimsel olarak kategorize et (İlkbahar/Yaz ve Sonbahar/Kış).
+2. Her mevsim için en çok satması beklenen 5 kombin öner ve nedenini açıkla.
+
+🌤️ HAVA DURUMU ETKİSİ:
+3. Farklı hava koşullarında (güneşli, yağmurlu, soğuk, sıcak) hangi kombinlerin öne çıkacağını tahmin et.
+4. Ani hava değişikliklerinde uygulanabilecek acil kampanya stratejileri öner.
+
+📈 TREND TAHMİNİ:
+5. Önümüzdeki sezonda yükselecek giyim trendlerini ve bu verilerle nasıl uyumlu olduğunu analiz et.
+6. Koleksiyon planlama için somut öneriler sun.
+
+🎯 KAMPANYA TAKVİMİ:
+7. 12 aylık kampanya takvimi oluştur: Her ay için hangi ürün kombinleri vurgulanmalı?
+8. Özel günler (Sevgililer Günü, Anneler Günü, Okul Sezonu, Yılbaşı vb.) için özel kombin önerileri.
+
+Madde madde, profesyonel ve uygulanabilir önerilerle yaz."""
+
+        sonuc = gemini_istek_gonder(prompt)
+
+        def goster():
+            for w in sezon_icerik_frame.winfo_children():
+                w.destroy()
+
+            # Sezon kartları
+            ctk.CTkLabel(sezon_icerik_frame, text="📊 Sezon & Trend Tahmin Raporu",
+                         font=("Segoe UI", 18, "bold"),
+                         text_color=tema_renk("yazi")).pack(anchor="w", padx=10, pady=(10, 5))
+
+            sezon_renkler = {"🌸 İlkbahar": "#2ecc71", "☀️ Yaz": "#f39c12",
+                             "🍂 Sonbahar": "#e67e22", "❄️ Kış": "#3498db"}
+
+            sezon_grid = ctk.CTkFrame(sezon_icerik_frame, fg_color="transparent")
+            sezon_grid.pack(fill="x", padx=5, pady=5)
+            for i in range(4):
+                sezon_grid.grid_columnconfigure(i, weight=1)
+
+            for idx, (sezon, renk) in enumerate(sezon_renkler.items()):
+                kart = ctk.CTkFrame(sezon_grid, fg_color=tema_renk("kart"),
+                                    corner_radius=12, border_width=2,
+                                    border_color=renk)
+                kart.grid(row=0, column=idx, padx=6, pady=6, sticky="nsew")
+                ctk.CTkLabel(kart, text=sezon,
+                             font=("Segoe UI", 16, "bold"),
+                             text_color=renk).pack(pady=(10, 5))
+                aylar = {0: "Mar-May", 1: "Haz-Ağu", 2: "Eyl-Kas", 3: "Ara-Şub"}
+                ctk.CTkLabel(kart, text=aylar[idx],
+                             font=("Segoe UI", 11),
+                             text_color=tema_renk("yazi3")).pack(pady=(0, 10))
+
+            # AI Analiz sonucu
+            ai_kart = ctk.CTkFrame(sezon_icerik_frame, fg_color=tema_renk("kart"),
+                                   corner_radius=12, border_width=2,
+                                   border_color="#2ecc71")
+            ai_kart.pack(fill="x", padx=10, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text="🤖 AI Sezon & Trend Analizi",
+                         font=("Segoe UI", 16, "bold"),
+                         text_color="#2ecc71").pack(anchor="w", padx=15, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text=sonuc,
+                         font=("Segoe UI", 12),
+                         text_color=tema_renk("yazi2"),
+                         wraplength=800, justify="left").pack(fill="x", padx=15, pady=(5, 15))
+
+        root.after(0, goster)
+
+    threading.Thread(target=tahmin_yap, daemon=True).start()
+
+
+# --- AKILLI ARAÇLAR: A/B TEST SİMÜLASYONU (Özellik #8) ---
+def ab_test_calistir():
+    """İki farklı kampanya senaryosunu AI ile simüle eder."""
+    if not kombin_sonuclari:
+        messagebox.showwarning("Uyarı", "Önce verilerin yüklenmesi gerekiyor.")
+        return
+
+    senaryo_a = ab_senaryo_a_var.get().strip()
+    senaryo_b = ab_senaryo_b_var.get().strip()
+
+    if not senaryo_a or not senaryo_b:
+        messagebox.showwarning("Uyarı", "Lütfen her iki senaryoyu da doldurun.")
+        return
+
+    for w in ab_sonuc_frame.winfo_children():
+        w.destroy()
+
+    ctk.CTkLabel(ab_sonuc_frame, text="⏳ A/B test simülasyonu çalışıyor...",
+                 font=("Segoe UI", 14), text_color="#f39c12").pack(pady=10)
+
+    def simulasyon_yap():
+        ozet = veri_ozeti_olustur()
+        prompt = f"""Sen uzman bir e-ticaret A/B test analisti ve dönüşüm optimizasyonu danışmanısın.
+
+{ozet}
+
+İki kampanya senaryosunu karşılaştır:
+
+📌 SENARYO A: {senaryo_a}
+📌 SENARYO B: {senaryo_b}
+
+Lütfen şu başlıklar altında detaylı analiz yap:
+
+1. 📊 TAHMİNİ SONUÇLAR:
+   - Her senaryo için tahmini dönüşüm oranı (%)
+   - Tahmini sepet ortalaması değişimi
+   - Tahmini gelir etkisi
+
+2. 🎯 HEDEF KİTLE ANALİZİ:
+   - Her senaryo hangi müşteri segmentine daha çok hitap eder?
+   - Hangi ürün kombinleri her senaryoda daha çok satılır?
+
+3. ⚖️ AVANTAJ/DEZAVANTAJ:
+   - Her senaryonun güçlü ve zayıf yönleri
+   - Kâr marjına etkisi
+
+4. 🏆 ÖNERİ:
+   - Hangisi daha başarılı olur ve neden?
+   - Hibrit bir yaklaşım mümkün mü?
+   - Uygulama süresi ve test protokolü önerisi
+
+Somut rakamlar ve yüzdelerle, profesyonel bir A/B test raporu formatında yaz."""
+
+        sonuc = gemini_istek_gonder(prompt)
+
+        def goster():
+            for w in ab_sonuc_frame.winfo_children():
+                w.destroy()
+
+            # Karşılaştırma kartları
+            karsilastirma = ctk.CTkFrame(ab_sonuc_frame, fg_color="transparent")
+            karsilastirma.pack(fill="x", padx=5, pady=5)
+            karsilastirma.grid_columnconfigure(0, weight=1)
+            karsilastirma.grid_columnconfigure(1, weight=1)
+
+            for col, (label, senaryo, renk) in enumerate([
+                ("🅰️ Senaryo A", senaryo_a, "#3498db"),
+                ("🅱️ Senaryo B", senaryo_b, "#e74c3c")
+            ]):
+                kart = ctk.CTkFrame(karsilastirma, fg_color=tema_renk("kart"),
+                                    corner_radius=12, border_width=2,
+                                    border_color=renk)
+                kart.grid(row=0, column=col, padx=8, pady=8, sticky="nsew")
+                ctk.CTkLabel(kart, text=label,
+                             font=("Segoe UI", 16, "bold"),
+                             text_color=renk).pack(pady=(10, 5))
+                ctk.CTkLabel(kart, text=senaryo,
+                             font=("Segoe UI", 12),
+                             text_color=tema_renk("yazi"),
+                             wraplength=350).pack(padx=15, pady=(5, 15))
+
+            # AI sonuç
+            ai_kart = ctk.CTkFrame(ab_sonuc_frame, fg_color=tema_renk("kart"),
+                                   corner_radius=12, border_width=2,
+                                   border_color="#9b59b6")
+            ai_kart.pack(fill="x", padx=10, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text="🤖 AI Simülasyon Sonucu",
+                         font=("Segoe UI", 16, "bold"),
+                         text_color="#9b59b6").pack(anchor="w", padx=15, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text=sonuc,
+                         font=("Segoe UI", 12),
+                         text_color=tema_renk("yazi2"),
+                         wraplength=800, justify="left").pack(fill="x", padx=15, pady=(5, 15))
+
+        root.after(0, goster)
+
+    threading.Thread(target=simulasyon_yap, daemon=True).start()
+
+
+# --- AKILLI ARAÇLAR: OTOMATİK ERKEN UYARI SİSTEMİ (Özellik #9) ---
+def erken_uyari_kontrol():
+    """Önceki analizle karşılaştırarak değişimleri tespit eder."""
+    if not kombin_sonuclari:
+        messagebox.showwarning("Uyarı", "Önce verilerin yüklenmesi gerekiyor.")
+        return
+
+    for w in uyari_icerik_frame.winfo_children():
+        w.destroy()
+
+    ctk.CTkLabel(uyari_icerik_frame, text="⏳ Erken uyarı analizi yapılıyor...",
+                 font=("Segoe UI", 14), text_color="#f39c12").pack(pady=10)
+
+    def uyari_analiz():
+        # Geçmiş analizleri al
+        gecmis = gecmis_analizleri_getir()
+
+        uyarilar = []
+        if gecmis and len(gecmis) > 1:
+            onceki = gecmis[1]  # Bir önceki analiz
+            simdiki_siparis = toplam_siparis_sayisi
+            onceki_siparis = onceki[2]
+
+            if onceki_siparis > 0:
+                degisim = ((simdiki_siparis - onceki_siparis) / onceki_siparis) * 100
+                if degisim < -10:
+                    uyarilar.append(("🔴", f"Sipariş sayısı %{abs(degisim):.1f} düştü! (Önceki: {onceki_siparis}, Şimdi: {simdiki_siparis})"))
+                elif degisim > 10:
+                    uyarilar.append(("🟢", f"Sipariş sayısı %{degisim:.1f} arttı! (Önceki: {onceki_siparis}, Şimdi: {simdiki_siparis})"))
+
+            onceki_kombin = onceki[4]
+            simdiki_kombin = len(kombin_sonuclari)
+            if onceki_kombin > 0:
+                k_degisim = ((simdiki_kombin - onceki_kombin) / onceki_kombin) * 100
+                if abs(k_degisim) > 15:
+                    renk = "🟢" if k_degisim > 0 else "🔴"
+                    uyarilar.append((renk, f"Kombin çifti sayısı %{abs(k_degisim):.1f} {'arttı' if k_degisim > 0 else 'düştü'}!"))
+
+        # Stok uyarıları - düşük destekli ama yüksek frekansli kombinler
+        for k in kombin_sonuclari[:10]:
+            if k['destek_yuzde'] > 5 and k['frekans'] > 20:
+                uyarilar.append(("🟡", f"Yüksek talep uyarısı: {k['urun_cifti']} ({k['frekans']}x satış, %{k['destek_yuzde']:.1f} destek) - Stok kontrolü önerilir"))
+
+        # Düşüşteki kombinler (destek düşük ama listede olan)
+        for k in kombin_sonuclari[:20]:
+            if k['destek_yuzde'] < 1 and k['frekans'] > 5:
+                uyarilar.append(("🟠", f"Düşük destek uyarısı: {k['urun_cifti']} (Frekans: {k['frekans']} ama destek sadece %{k['destek_yuzde']:.1f})"))
+
+        if not uyarilar:
+            uyarilar.append(("🟢", "Tüm metrikler normal aralıkta. Önemli bir değişiklik tespit edilmedi."))
+
+        # AI analiz
+        uyari_metni = "\n".join([f"{r} {m}" for r, m in uyarilar])
+        ozet = veri_ozeti_olustur()
+
+        prompt = f"""Sen uzman bir erken uyarı sistemi analisti ve perakende risk danışmanısın.
+
+{ozet}
+
+Sistem tarafından tespit edilen uyarılar:
+{uyari_metni}
+
+Lütfen şu analizleri yap:
+1. Her uyarı için aciliyet derecesi belirle (Kritik/Yüksek/Orta/Düşük).
+2. Her uyarı için önerilen aksiyon planı yaz.
+3. Stok tükenme riski olan ürünleri belirle.
+4. Trend kırılma noktalarını tespit et: Hangi kombinler düşüşte, hangileri yükselişte?
+5. Proaktif kampanya önerileri sun.
+Madde madde, aciliyet sırasına göre yaz."""
+
+        ai_sonuc = gemini_istek_gonder(prompt)
+
+        def goster():
+            for w in uyari_icerik_frame.winfo_children():
+                w.destroy()
+
+            ctk.CTkLabel(uyari_icerik_frame, text="🔔 Erken Uyarı Sistemi Raporu",
+                         font=("Segoe UI", 18, "bold"),
+                         text_color=tema_renk("yazi")).pack(anchor="w", padx=10, pady=(10, 5))
+
+            # Uyarı kartları
+            for idx, (renk_emoji, mesaj) in enumerate(uyarilar):
+                renk_map = {"🔴": "#e74c3c", "🟢": "#2ecc71", "🟡": "#f39c12", "🟠": "#e67e22"}
+                border_renk = renk_map.get(renk_emoji, "#95a5a6")
+                satir = ctk.CTkFrame(uyari_icerik_frame, fg_color=tema_renk("kart"),
+                                     corner_radius=8, border_width=2,
+                                     border_color=border_renk, height=45)
+                satir.pack(fill="x", padx=10, pady=3)
+                satir.pack_propagate(False)
+                ctk.CTkLabel(satir, text=f"{renk_emoji} {mesaj}",
+                             font=("Segoe UI", 12),
+                             text_color=tema_renk("yazi")).pack(side="left", padx=15, pady=8)
+
+            # AI analiz
+            ai_kart = ctk.CTkFrame(uyari_icerik_frame, fg_color=tema_renk("kart"),
+                                   corner_radius=12, border_width=2,
+                                   border_color="#e74c3c")
+            ai_kart.pack(fill="x", padx=10, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text="🤖 AI Risk Analizi & Aksiyon Planı",
+                         font=("Segoe UI", 16, "bold"),
+                         text_color="#e74c3c").pack(anchor="w", padx=15, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text=ai_sonuc,
+                         font=("Segoe UI", 12),
+                         text_color=tema_renk("yazi2"),
+                         wraplength=800, justify="left").pack(fill="x", padx=15, pady=(5, 15))
+
+        root.after(0, goster)
+
+    threading.Thread(target=uyari_analiz, daemon=True).start()
+
+
+# --- AKILLI ARAÇLAR: LOOKBOOK GENERATOR (Özellik #7) ---
+def lookbook_olustur():
+    """Ürün kombinleri için görsel lookbook panosu oluşturur."""
+    if not kombin_sonuclari:
+        messagebox.showwarning("Uyarı", "Önce verilerin yüklenmesi gerekiyor.")
+        return
+
+    for w in lookbook_icerik_frame.winfo_children():
+        w.destroy()
+
+    ctk.CTkLabel(lookbook_icerik_frame, text="⏳ Lookbook oluşturuluyor...",
+                 font=("Segoe UI", 14), text_color="#f39c12").pack(pady=10)
+
+    def lookbook_hazirla():
+        ozet = veri_ozeti_olustur()
+        # En iyi 6 kombin
+        top_kombinler = kombin_sonuclari[:6]
+        kombin_listesi = "\n".join([f"{i+1}. {k['urun_cifti']} ({k['frekans']}x)" for i, k in enumerate(top_kombinler)])
+
+        prompt = f"""Sen profesyonel bir moda editörü ve görsel merchandiser'sın. DeFacto gibi bir giyim markası için lookbook hazırlıyorsun.
+
+{ozet}
+
+En popüler 6 kombin:
+{kombin_listesi}
+
+Her kombin için aşağıdaki bilgileri oluştur:
+1. 🎨 LOOKBOOK İSMİ: Yaratıcı ve çekici bir isim (Türkçe)
+2. 📝 STİL AÇIKLAMASI: 1-2 cümlelik mood/stil tanımı
+3. 👤 HEDEF KİTLE: Kime hitap ediyor (yaş, cinsiyet, yaşam tarzı)
+4. 🎯 KULLANIM ALANI: Nerede giyilir (ofis, günlük, akşam, spor vb.)
+5. 💡 STİL İPUCU: Müşteriye verilecek stil önerisi
+6. 📸 FOTOĞRAF DİREKTİFİ: Bu kombin nasıl fotoğraflanmalı (ışık, arka plan, poz önerisi)
+7. 📱 SOSYAL MEDYA CAPTION: Instagram/TikTok için hazır paylaşım metni (hashtag dahil)
+
+Sonunda genel lookbook stratejisi öner:
+- Sezonluk lookbook çıkış takvimi
+- Dijital vs. basılı lookbook stratejisi
+- Influencer işbirliği önerileri
+
+Her kombin için ayrı ayrı, yaratıcı ve profesyonel şekilde yaz."""
+
+        ai_sonuc = gemini_istek_gonder(prompt)
+
+        def goster():
+            for w in lookbook_icerik_frame.winfo_children():
+                w.destroy()
+
+            ctk.CTkLabel(lookbook_icerik_frame, text="🖼️ Lookbook & Mood Board",
+                         font=("Segoe UI", 18, "bold"),
+                         text_color=tema_renk("yazi")).pack(anchor="w", padx=10, pady=(10, 5))
+
+            # Kombin kartları - görsel stil
+            lookbook_grid = ctk.CTkFrame(lookbook_icerik_frame, fg_color="transparent")
+            lookbook_grid.pack(fill="x", padx=5, pady=5)
+            for i in range(3):
+                lookbook_grid.grid_columnconfigure(i, weight=1)
+
+            gradyan_renkler = [
+                ("#667eea", "#764ba2"), ("#f093fb", "#f5576c"),
+                ("#4facfe", "#00f2fe"), ("#43e97b", "#38f9d7"),
+                ("#fa709a", "#fee140"), ("#a18cd1", "#fbc2eb")
+            ]
+
+            for idx, k in enumerate(top_kombinler):
+                renk1 = gradyan_renkler[idx % len(gradyan_renkler)][0]
+                kart = ctk.CTkFrame(lookbook_grid, fg_color=tema_renk("kart"),
+                                    corner_radius=15, border_width=3,
+                                    border_color=renk1)
+                kart.grid(row=idx // 3, column=idx % 3, padx=8, pady=8, sticky="nsew")
+
+                # Üst renkli şerit
+                ust = ctk.CTkFrame(kart, fg_color=renk1, height=6, corner_radius=3)
+                ust.pack(fill="x", padx=12, pady=(12, 5))
+
+                ctk.CTkLabel(kart, text=f"Look #{idx+1}",
+                             font=("Segoe UI", 14, "bold"),
+                             text_color=renk1).pack(pady=(5, 2))
+
+                ctk.CTkLabel(kart, text=k['urun1'],
+                             font=("Segoe UI", 12, "bold"),
+                             text_color=tema_renk("yazi")).pack()
+                ctk.CTkLabel(kart, text="✦",
+                             font=("Segoe UI", 10),
+                             text_color=tema_renk("yazi3")).pack()
+                ctk.CTkLabel(kart, text=k['urun2'],
+                             font=("Segoe UI", 12, "bold"),
+                             text_color=tema_renk("yazi")).pack()
+
+                alt = ctk.CTkFrame(kart, fg_color="transparent")
+                alt.pack(fill="x", padx=10, pady=(8, 12))
+                ctk.CTkLabel(alt, text=f"❤️ {k['frekans']}",
+                             font=("Segoe UI", 10),
+                             text_color="#e74c3c").pack(side="left", padx=5)
+                ctk.CTkLabel(alt, text=f"⭐ %{k['guven_max']:.0f}",
+                             font=("Segoe UI", 10, "bold"),
+                             text_color="#f39c12").pack(side="right", padx=5)
+
+            # AI Lookbook içeriği
+            ai_kart = ctk.CTkFrame(lookbook_icerik_frame, fg_color=tema_renk("kart"),
+                                   corner_radius=12, border_width=2,
+                                   border_color="#667eea")
+            ai_kart.pack(fill="x", padx=10, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text="🤖 AI Lookbook Direktifi",
+                         font=("Segoe UI", 16, "bold"),
+                         text_color="#667eea").pack(anchor="w", padx=15, pady=(10, 5))
+            ctk.CTkLabel(ai_kart, text=ai_sonuc,
+                         font=("Segoe UI", 12),
+                         text_color=tema_renk("yazi2"),
+                         wraplength=800, justify="left").pack(fill="x", padx=15, pady=(5, 15))
+
+        root.after(0, goster)
+
+    threading.Thread(target=lookbook_hazirla, daemon=True).start()
+
+
 # --- ARAYÜZ YARDIMCI FONKSİYONLARI ---
 def set_status(msg, color="white"):
     status_label.configure(text=msg, text_color=color)
@@ -1285,7 +1887,7 @@ def tema_degistir():
 
 # --- SAYFA MANTIKLARI ---
 def secme_sayfasi(sayfa_adi):
-    for frame in [frame_dashboard, frame_search, frame_charts, frame_ai]:
+    for frame in [frame_dashboard, frame_search, frame_charts, frame_ai, frame_tools]:
         frame.pack_forget()
     for btn in menu_butonlari:
         btn.configure(fg_color="transparent")
@@ -1306,6 +1908,9 @@ def secme_sayfasi(sayfa_adi):
         elif sayfa_adi == "AI":
             frame_ai.pack(fill="both", expand=True)
             btn_ai.configure(fg_color=("#3498db", "#3498db"))
+        elif sayfa_adi == "Tools":
+            frame_tools.pack(fill="both", expand=True)
+            btn_tools.configure(fg_color=("#3498db", "#3498db"))
 
 # --- VERİTABANI BAŞLAT ---
 veritabani_baslat()
@@ -1314,7 +1919,7 @@ veritabani_baslat()
 # ANA PENCERE (ROOT) AYARLARI
 # ============================================================
 root = ctk.CTk()
-root.title("DeFacto Enterprise - Market Sepet & Kombin Analizi v2.0")
+root.title("DeFacto Enterprise - Market Sepet & Kombin Analizi v3.0")
 root.geometry("1400x900")
 
 # --- ANIMASYONLU SPLASH SCREEN (A3) ---
@@ -1334,7 +1939,7 @@ splash.geometry(f"650x400+{x}+{y}")
 ctk.CTkLabel(splash, text="DeFacto",
              font=("Segoe UI", 64, "bold"),
              text_color="#3498db").pack(pady=(50, 0))
-ctk.CTkLabel(splash, text="Ürün Kombin ve Sepet Analiz Motoru v2.0",
+ctk.CTkLabel(splash, text="Ürün Kombin ve Sepet Analiz Motoru v3.0",
              font=("Segoe UI", 16),
              text_color="#bdc3c7").pack(pady=(5, 15))
 
@@ -1358,11 +1963,12 @@ splash_yuzde.pack(pady=5)
 
 # Animasyonlu yükleme adımları (A3)
 splash_adimlari = [
-    (0.15, "📊 Veri motoru başlatılıyor..."),
-    (0.35, "🤖 AI modülü bağlanıyor..."),
-    (0.55, "📈 Grafik motoru hazırlanıyor..."),
-    (0.75, "🗄️ Veritabanı kontrol ediliyor..."),
-    (0.90, "🎨 Arayüz hazırlanıyor..."),
+    (0.12, "📊 Veri motoru başlatılıyor..."),
+    (0.25, "🤖 AI modülü bağlanıyor..."),
+    (0.40, "📈 Grafik motoru hazırlanıyor..."),
+    (0.55, "🗄️ Veritabanı kontrol ediliyor..."),
+    (0.70, "🚀 Akıllı Araçlar yükleniyor..."),
+    (0.85, "🎨 Arayüz hazırlanıyor..."),
     (1.0, "✅ Hazır!")
 ]
 
@@ -1407,7 +2013,7 @@ logo_frame.pack(fill="x", pady=(20, 10))
 ctk.CTkLabel(logo_frame, text="Kombin",
              font=("Segoe UI", 32, "bold"),
              text_color="#3498db").pack()
-ctk.CTkLabel(logo_frame, text="ANALİZ v2.0",
+ctk.CTkLabel(logo_frame, text="ANALİZ v3.0",
              font=("Segoe UI", 14),
              text_color="#bdc3c7").pack()
 
@@ -1440,7 +2046,14 @@ btn_ai = ctk.CTkButton(sidebar, text="🤖 AI Merkezi",
                        command=lambda: secme_sayfasi("AI"))
 btn_ai.pack(fill="x", padx=15, pady=4)
 
-menu_butonlari = [btn_dash, btn_search, btn_charts, btn_ai]
+btn_tools = ctk.CTkButton(sidebar, text="🚀 Akıllı Araçlar",
+                           font=("Segoe UI", 14, "bold"),
+                           text_color="#2ecc71", anchor="w",
+                           corner_radius=6,
+                           command=lambda: secme_sayfasi("Tools"))
+btn_tools.pack(fill="x", padx=15, pady=4)
+
+menu_butonlari = [btn_dash, btn_search, btn_charts, btn_ai, btn_tools]
 
 # Hover efektleri sidebar butonlarına (A5)
 for btn in menu_butonlari:
@@ -1640,11 +2253,157 @@ ctk.CTkButton(chat_input_frame, text="Gönder ➤",
               command=ai_sohbet_gonder).pack(side="right", padx=(5, 10), pady=10)
 
 # ============================================================
+# 5. AKILLI ARAÇLAR SAYFASI (YENİ)
+# ============================================================
+frame_tools = ctk.CTkFrame(content_area, fg_color="transparent")
+
+tools_baslik_frame = ctk.CTkFrame(frame_tools, fg_color="transparent")
+tools_baslik_frame.pack(fill="x", padx=20, pady=(20, 5))
+ctk.CTkLabel(tools_baslik_frame, text="🚀 Akıllı Araçlar",
+             font=("Segoe UI", 24, "bold"),
+             text_color="white").pack(side="left")
+ctk.CTkLabel(tools_baslik_frame, text="AI destekli gelişmiş analiz araçları",
+             font=("Segoe UI", 13),
+             text_color="#95a5a6").pack(side="left", padx=15)
+
+# Araç seçim sekmeleri
+tools_tab_frame = ctk.CTkFrame(frame_tools, fg_color="#1e272e", corner_radius=10)
+tools_tab_frame.pack(fill="x", padx=20, pady=5)
+
+tools_secenekler = ["🏷️ Bundle", "📊 Sezon Tahmini",
+                    "📱 A/B Test", "🔔 Erken Uyarı", "🖼️ Lookbook"]
+
+# Sub-frames for each tool (all inside a scrollable container)
+tools_display = ctk.CTkScrollableFrame(frame_tools, fg_color="transparent")
+tools_display.pack(fill="both", expand=True, padx=20, pady=5)
+
+# --- Bundle Oluşturucu Alt-Sayfası ---
+bundle_frame = ctk.CTkFrame(tools_display, fg_color="transparent")
+bundle_baslik = ctk.CTkFrame(bundle_frame, fg_color="transparent")
+bundle_baslik.pack(fill="x", padx=5, pady=(10, 5))
+ctk.CTkLabel(bundle_baslik, text="🏷️ Dinamik Bundle Oluşturucu",
+             font=("Segoe UI", 18, "bold"),
+             text_color="white").pack(side="left")
+ctk.CTkLabel(bundle_baslik,
+             text="En çok birlikte satılan ürünlerden otomatik paket önerileri",
+             font=("Segoe UI", 12),
+             text_color="#95a5a6").pack(side="left", padx=10)
+ctk.CTkButton(bundle_baslik, text="🚀 Bundle Oluştur",
+              fg_color="#e74c3c", hover_color="#c0392b",
+              command=bundle_olustur,
+              font=("Segoe UI", 13, "bold")).pack(side="right", padx=10)
+bundle_icerik_frame = ctk.CTkFrame(bundle_frame, fg_color="transparent")
+bundle_icerik_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+# --- Sezon Tahmini Alt-Sayfası ---
+sezon_frame = ctk.CTkFrame(tools_display, fg_color="transparent")
+sezon_baslik = ctk.CTkFrame(sezon_frame, fg_color="transparent")
+sezon_baslik.pack(fill="x", padx=5, pady=(10, 5))
+ctk.CTkLabel(sezon_baslik, text="📊 Sezon & Hava Durumu Tahmini",
+             font=("Segoe UI", 18, "bold"),
+             text_color="white").pack(side="left")
+ctk.CTkButton(sezon_baslik, text="🚀 Tahmin Yap",
+              fg_color="#2ecc71", hover_color="#27ae60",
+              command=sezon_tahmin_calistir,
+              font=("Segoe UI", 13, "bold")).pack(side="right", padx=10)
+sezon_icerik_frame = ctk.CTkFrame(sezon_frame, fg_color="transparent")
+sezon_icerik_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+# --- A/B Test Alt-Sayfası ---
+ab_frame = ctk.CTkFrame(tools_display, fg_color="transparent")
+ab_baslik = ctk.CTkFrame(ab_frame, fg_color="transparent")
+ab_baslik.pack(fill="x", padx=5, pady=(10, 5))
+ctk.CTkLabel(ab_baslik, text="📱 A/B Test Simülasyonu",
+             font=("Segoe UI", 18, "bold"),
+             text_color="white").pack(side="left")
+
+ab_input_frame = ctk.CTkFrame(ab_frame, fg_color="#1e272e", corner_radius=10)
+ab_input_frame.pack(fill="x", padx=5, pady=5)
+
+ctk.CTkLabel(ab_input_frame, text="🅰️ Senaryo A:",
+             font=("Segoe UI", 12, "bold"),
+             text_color="#3498db").pack(side="left", padx=(15, 5), pady=10)
+ab_senaryo_a_var = ctk.StringVar(value="Top 5 kombinlere %20 indirim")
+ab_entry_a = ctk.CTkEntry(ab_input_frame, textvariable=ab_senaryo_a_var,
+                           width=250, font=("Segoe UI", 12))
+ab_entry_a.pack(side="left", padx=5, pady=10)
+
+ctk.CTkLabel(ab_input_frame, text="🅱️ Senaryo B:",
+             font=("Segoe UI", 12, "bold"),
+             text_color="#e74c3c").pack(side="left", padx=(20, 5), pady=10)
+ab_senaryo_b_var = ctk.StringVar(value="3 al 2 öde kampanyası")
+ab_entry_b = ctk.CTkEntry(ab_input_frame, textvariable=ab_senaryo_b_var,
+                           width=250, font=("Segoe UI", 12))
+ab_entry_b.pack(side="left", padx=5, pady=10)
+
+ctk.CTkButton(ab_input_frame, text="⚡ Simüle Et",
+              fg_color="#9b59b6", hover_color="#8e44ad",
+              command=ab_test_calistir,
+              font=("Segoe UI", 12, "bold")).pack(side="right", padx=15, pady=10)
+
+ab_sonuc_frame = ctk.CTkFrame(ab_frame, fg_color="transparent")
+ab_sonuc_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+# --- Erken Uyarı Alt-Sayfası ---
+uyari_frame = ctk.CTkFrame(tools_display, fg_color="transparent")
+uyari_baslik = ctk.CTkFrame(uyari_frame, fg_color="transparent")
+uyari_baslik.pack(fill="x", padx=5, pady=(10, 5))
+ctk.CTkLabel(uyari_baslik, text="🔔 Otomatik Erken Uyarı Sistemi",
+             font=("Segoe UI", 18, "bold"),
+             text_color="white").pack(side="left")
+ctk.CTkButton(uyari_baslik, text="🔍 Kontrol Et",
+              fg_color="#e74c3c", hover_color="#c0392b",
+              command=erken_uyari_kontrol,
+              font=("Segoe UI", 13, "bold")).pack(side="right", padx=10)
+uyari_icerik_frame = ctk.CTkFrame(uyari_frame, fg_color="transparent")
+uyari_icerik_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+# --- Lookbook Alt-Sayfası ---
+lookbook_frame = ctk.CTkFrame(tools_display, fg_color="transparent")
+lookbook_baslik = ctk.CTkFrame(lookbook_frame, fg_color="transparent")
+lookbook_baslik.pack(fill="x", padx=5, pady=(10, 5))
+ctk.CTkLabel(lookbook_baslik, text="🖼️ Lookbook Generator",
+             font=("Segoe UI", 18, "bold"),
+             text_color="white").pack(side="left")
+ctk.CTkButton(lookbook_baslik, text="🎨 Lookbook Oluştur",
+              fg_color="#667eea", hover_color="#5a6fd6",
+              command=lookbook_olustur,
+              font=("Segoe UI", 13, "bold")).pack(side="right", padx=10)
+lookbook_icerik_frame = ctk.CTkFrame(lookbook_frame, fg_color="transparent")
+lookbook_icerik_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+# Tab değiştirme fonksiyonu
+tools_sub_frames = {
+    "🏷️ Bundle": bundle_frame,
+    "📊 Sezon Tahmini": sezon_frame,
+    "📱 A/B Test": ab_frame,
+    "🔔 Erken Uyarı": uyari_frame,
+    "🖼️ Lookbook": lookbook_frame
+}
+
+def tools_tab_degisti(secim):
+    for sf in tools_sub_frames.values():
+        sf.pack_forget()
+    if secim in tools_sub_frames:
+        tools_sub_frames[secim].pack(fill="both", expand=True)
+
+tools_secim_var = ctk.StringVar(value="🏷️ Bundle")
+tools_segmented = ctk.CTkSegmentedButton(
+    tools_tab_frame, values=tools_secenekler,
+    variable=tools_secim_var,
+    command=tools_tab_degisti,
+    font=("Segoe UI", 12))
+tools_segmented.pack(fill="x", padx=10, pady=10)
+
+# Varsayılan olarak Bundle göster
+bundle_frame.pack(fill="both", expand=True)
+
+# ============================================================
 # ALT DURUM ÇUBUĞU
 # ============================================================
 status_frame = ctk.CTkFrame(root, height=25, corner_radius=0, fg_color="#111111")
 status_frame.pack(side="bottom", fill="x")
-status_label = ctk.CTkLabel(status_frame, text="Sistem Hazır | v2.0",
+status_label = ctk.CTkLabel(status_frame, text="Sistem Hazır | v3.0 | 10 AI Modül Aktif",
                             font=("Segoe UI", 10))
 status_label.pack(side="right", padx=20)
 
