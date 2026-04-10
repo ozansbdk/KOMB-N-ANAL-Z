@@ -479,7 +479,8 @@ def kendi_verimi_yukle():
 
     try:
         if dosya_yolu.endswith('.csv'):
-            df = pd.read_csv(dosya_yolu)
+            # Ayırıcıyı otomatik algıla (şablon ';' kullanıyor)
+            df = pd.read_csv(dosya_yolu, sep=None, engine='python', encoding='utf-8-sig')
         else:
             df = pd.read_excel(dosya_yolu)
 
